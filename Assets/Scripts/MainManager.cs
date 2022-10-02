@@ -1,8 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.Windows;
+using File = System.IO.File;
+using Input = UnityEngine.Input;
 
 public class MainManager : MonoBehaviour
 {
@@ -12,16 +17,24 @@ public class MainManager : MonoBehaviour
 
     public Text ScoreText;
     public GameObject GameOverText;
+    public GameObject MenuText;
+    public GameObject ExitText;
+    public Text BestScore;
     
     private bool m_Started = false;
     private int m_Points;
     
     private bool m_GameOver = false;
-
+    public TMP_Text nameText;
+    public static int bestPoint;
+    public static string namePlayer;
     
+      
     // Start is called before the first frame update
     void Start()
     {
+        LoadGame();
+        BestScore.text = "Best score: " + bestPoint;
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -36,6 +49,8 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+       
+        nameText.text ="Name: "+ TMPInput.tpInput.text;
     }
 
     private void Update()
@@ -62,6 +77,8 @@ public class MainManager : MonoBehaviour
         }
     }
 
+    
+
     void AddPoint(int point)
     {
         m_Points += point;
@@ -72,5 +89,34 @@ public class MainManager : MonoBehaviour
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        MenuText.SetActive(true);
+        ExitText.SetActive(true);
+        if(bestPoint<m_Points)  SaveGame();
     }
-}
+    [System.Serializable]
+    class SaveDate
+    {       
+        public int m_Points;
+        public string name;        
+    }
+    public void SaveGame()
+    {
+        var date = new SaveDate();
+        date.m_Points=m_Points;
+        date.name=TMPInput.tpInput.text;
+        string json=JsonUtility.ToJson(date);
+        File.WriteAllText(Application.persistentDataPath+"/savefile.json",json);
+    }
+    public static void LoadGame()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            var json = File.ReadAllText(path);
+            var date = JsonUtility.FromJson<SaveDate>(json);
+                bestPoint = date.m_Points;
+            namePlayer = date.name;
+        }
+        else { bestPoint = 0; namePlayer = "Player"; }
+    }
+ }
